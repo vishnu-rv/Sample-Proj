@@ -1,6 +1,6 @@
 const express = require("express");
-const app = express();
 const { resolve } = require("path");
+const app = express();
 const port = process.env.PORT || 3000;
 
 // Importing the dotenv module to use environment variables:
@@ -19,39 +19,44 @@ if (api_key) {
 }
 
 // Setting up the static folder:
-app.use(express.static(resolve(__dirname, process.env.STATIC_DIR || "public")));
+const staticDir = process.env.STATIC_DIR || "public"; // Default to "public"
+app.use(express.static(resolve(__dirname, staticDir)));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Helper function to resolve paths
+const resolvePath = (filePath) => resolve(__dirname, staticDir, filePath);
+
+// Routes
 app.get("/", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/index.html" || "public/index.html");
+  const path = resolvePath("index.html");
   res.sendFile(path);
 });
 
 // Creating a route for the success page:
 app.get("/success", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/success.html" || "public/success.html");
+  const path = resolvePath("success.html");
   res.sendFile(path);
 });
 
 // Creating a route for the cancel page:
 app.get("/cancel", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/cancel.html" || "public/cancel.html");
+  const path = resolvePath("cancel.html");
   res.sendFile(path);
 });
 
 // Workshop page routes:
 app.get("/workshop1", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/workshops/workshop1.html" || "public/workshops/workshop1.html");
+  const path = resolvePath("workshops/workshop1.html");
   res.sendFile(path);
 });
 app.get("/workshop2", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/workshops/workshop2.html" || "public/workshops/workshop2.html");
+  const path = resolvePath("workshops/workshop2.html");
   res.sendFile(path);
 });
 app.get("/workshop3", (req, res) => {
-  const path = resolve(process.env.STATIC_DIR + "/workshops/workshop3.html" || "public/workshops/workshop3.html");
+  const path = resolvePath("workshops/workshop3.html");
   res.sendFile(path);
 });
 
@@ -97,4 +102,3 @@ app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
   console.log(`You may access your app at: ${domainURL}`);
 });
-
