@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_CREDENTIALS_ID = '2fd7aa25-5a0a-4ca8-a450-cf41de2687fd'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1' // Your Docker Hub username
-        KUBE_CONFIG = '/root/MY-PROJ-kubeconfig.yaml'
+        KUBE_CONFIG = '/home/jenkins/.kube/config'
         K8S_NAMESPACE = 'my-proj' // Added the namespace variable
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
