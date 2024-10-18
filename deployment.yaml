@@ -1,25 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-devops-proj
-  namespace: my-proj
+    name: my-devops-proj
+    namespace: my-proj
 spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: my-devops-proj
-  template:
-    metadata:
-      labels:
-        app: my-devops-proj
-    spec:
-      containers:
-        - name: my-devops-proj
-          image: vishnu2117/devops-proj-1:latest
-          ports:
-            - containerPort: 3000
-          env:
-            - name: STATIC_DIR
-              value: "public"  # Ensure this matches your app's structure
-            - name: DOMAIN
-              value: "http://116.204.172.200"  # LoadBalancer IP
+    replicas: 2
+    selector:
+        matchLabels:
+            app: my-devops-proj
+    template:
+        metadata:
+            labels:
+                app: my-devops-proj
+        spec:
+            containers:
+                - name: my-devops-proj
+                  image: vishnu2117/devops-proj-1:latest
+                  ports:
+                      - containerPort: 3000
