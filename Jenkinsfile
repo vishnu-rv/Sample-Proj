@@ -2,6 +2,7 @@ pipeline {
     agent any 
 
     environment {
+        DOCKER_CREDENTIALS_ID = '435bab52-7dd7-4561-8195-1f8897e99fac'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1' // Your Docker Hub username
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
