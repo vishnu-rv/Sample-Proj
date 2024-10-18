@@ -1,0 +1,26 @@
+# Node.js dependencies
+node_modules/
+
+# System files
+.local/
+.cache/
+.npm/
+.pm2/
+.docker/
+.faraday/
+.ssh/
+.kube/
+.lesshst
+.vim/
+.git/
+.bash_profile
+.Xauthority
+.wget-hsts
+.bashrc
+.profile
+.viminfo
+.bash_history
+
+# Configuration files (if you want to exclude them)
+MY-PROJ-kubeconfig.yaml
+
