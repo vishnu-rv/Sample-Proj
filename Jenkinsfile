@@ -2,7 +2,7 @@ pipeline {
     agent any 
 
     environment {
-        DOCKER_CREDENTIALS_ID = '435bab52-7dd7-4561-8195-1f8897e99fac'
+        DOCKER_CREDENTIALS_ID = '2fd7aa25-5a0a-4ca8-a450-cf41de2687fd'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1' // Your Docker Hub username
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
@@ -29,8 +29,8 @@ pipeline {
             steps {
                 // Login to Docker Hub and push the image
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') { // Replace with your Docker Hub credentials ID
-                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) { // Use the environment variable
+                     sh "docker push ${DOCKER_IMAGE}:latest"
                     }
                 }
             }
