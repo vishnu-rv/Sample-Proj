@@ -5,10 +5,6 @@ pipeline {
         DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
         GITHUB_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'
         DOCKER_IMAGE = "vishnu2117/sample-application:${BUILD_NUMBER}"  // Dynamic image name with build number
-        SONARQUBE_URL = 'http://164.52.206.0:9000'   // Your SonarQube URL
-        SONARQUBE_TOKEN = 'sqp_5ce836c82197d1fa3620025914a5a93bfb1c55d1'  // Your SonarQube token
-        SONAR_SCANNER_PATH = '/root/sonar/sonar-scanner-6.2.1.4610-linux-x64'  // Updated SonarQube scanner path
-        PROJECT_PATH = '/root/sonar/sonar-scanner-6.2.1.4610-linux-x64/Sample-Proj'  // Updated project path
     }
 
     stages {
@@ -22,22 +18,7 @@ pipeline {
             }
         }
 
-        // Stage 2: Run SonarQube Code Quality Analysis
-        stage('SonarQube Analysis') {
-            steps {
-                dir("${PROJECT_PATH}") {  // Change directory to the project path
-                    sh """
-                    ${SONAR_SCANNER_PATH}/bin/sonar-scanner \
-                      -Dsonar.projectKey=demo \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=${SONARQUBE_URL} \
-                      -Dsonar.token=${SONARQUBE_TOKEN}
-                    """
-                }
-            }
-        }
-
-        // Stage 3: Build Docker Image
+        // Stage 2: Build Docker Image
         stage('Build Docker Image') {
             steps {
                 script {
@@ -46,7 +27,7 @@ pipeline {
             }
         }
 
-        // Stage 4: Trivy Security Scan
+        // Stage 3: Trivy Security Scan
         stage('Trivy Security Scan') {
             steps {
                 sh """
@@ -55,7 +36,7 @@ pipeline {
             }
         }
 
-        // Stage 5: Push Docker Image to DockerHub
+        // Stage 4: Push Docker Image to DockerHub
         stage('Push Docker Image') {
             steps {
                 script {
@@ -66,7 +47,7 @@ pipeline {
             }
         }
 
-        // Stage 6: Deploy Docker Image (Optional)
+        // Stage 5: Deploy Docker Image (Optional)
         stage('Deploy to Kubernetes or Docker') {
             steps {
                 sh """
