@@ -43,7 +43,9 @@ pipeline {
                 script {
                     def versionNumber = getNextVersion() // Get the next version number
                     def imageTag = "${DOCKER_IMAGE}:v${versionNumber}" // Tag with version
-                    docker.build(imageTag) // Build the Docker image with version tag
+                    
+                    // Ensure Dockerfile path is correct
+                    sh "docker build -t ${imageTag} -f Sample-Proj/Dockerfile Sample-Proj" // Update path if necessary
                 }
             }
         }
