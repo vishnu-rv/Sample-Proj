@@ -8,41 +8,29 @@ pipeline {
         K8S_NAMESPACE = 'my-proj'
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
+        KUBE_CONFIG_CREDENTIALS_ID = 'd3a89aeb-9181-4f6d-b74e-2baf7bc6a43e'  // Newly created kubeconfig credential ID
     }
 
     stages {
-        stage('Cleanup') {
+        stage('Checkout') {
             steps {
-                echo "Cleaning up workspace"
-                cleanWs()
+                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/vishnu-rv/Sample-Proj.git'
             }
         }
 
-        stage('Checkout') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    checkout([$class: 'GitSCM', 
-                        branches: [[name: '*/master']], // Make sure the branch is correct
-                        userRemoteConfigs: [[url: 'https://github.com/vishnu-rv/Sample-Proj.git', credentialsId: GIT_CREDENTIALS_ID]]
-                    ])
+                    docker.build("${DOCKER_IMAGE}")
                 }
             }
         }
 
-        stage('Build') {
-            steps {
-                // Add the actual steps here
-                echo "Building the project"
-                sh 'docker build -t ${DOCKER_IMAGE}:v1 .'
-            }
-        }
-
-        stage('Push to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                        sh 'docker push ${DOCKER_IMAGE}:v1'
+                    docker.withRegistry('', "${DOCKER_CREDENTIALS_ID}") {
+                        docker.image("${DOCKER_IMAGE}").push('v1')
                     }
                 }
             }
