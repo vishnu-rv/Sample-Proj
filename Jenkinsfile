@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
-        GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1' // Ensure this matches your Git credentials ID
+        GIT_CREDENTIALS_ID = '6881cda4-f7d0-444e-8f4d-3ec3ae05f9de' // Updated ID
         KUBE_CONFIG_CREDENTIALS_ID = '9a294acd-a907-466c-bab7-36e33053cf4b'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
         K8S_NAMESPACE = 'my-proj'
@@ -14,9 +14,7 @@ pipeline {
     stages {
         stage('Cleanup') {
             steps {
-                script {
-                    cleanWs() // Clean workspace to prevent conflicts
-                }
+                // Cleanup steps (if any)
             }
         }
 
@@ -24,11 +22,8 @@ pipeline {
             steps {
                 script {
                     checkout([$class: 'GitSCM', 
-                        branches: [[name: '*/master']], // Change to 'master' branch
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/vishnu-rv/Demo.git',
-                            credentialsId: GIT_CREDENTIALS_ID
-                        ]]
+                        branches: [[name: '*/main']], // Adjust to your branch if necessary
+                        userRemoteConfigs: [[url: 'https://github.com/vishnu-rv/Demo.git', credentialsId: GIT_CREDENTIALS_ID]]
                     ])
                 }
             }
@@ -36,9 +31,9 @@ pipeline {
 
         stage('Build') {
             steps {
+                // Your build steps here (e.g., building Docker image)
                 script {
-                    // Build the Docker image and tag it with 'v1'
-                    def app = docker.build("${DOCKER_IMAGE}:v1")
+                    sh 'docker build -t ${DOCKER_IMAGE}:v1 .'
                 }
             }
         }
@@ -46,9 +41,9 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Push the Docker image to Docker Hub
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        app.push() // Push the image with the tag
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        sh 'docker push ${DOCKER_IMAGE}:v1'
                     }
                 }
             }
@@ -57,24 +52,21 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Deploy the Docker image to Kubernetes
                     withCredentials([file(credentialsId: KUBE_CONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
                         sh '''
-                        kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_DEPLOYMENT}=${DOCKER_IMAGE}:v1 -n ${K8S_NAMESPACE}
-                        kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                        kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_DEPLOYMENT}=${DOCKER_IMAGE}:v1 --namespace=${K8S_NAMESPACE}
+                        kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
                         '''
                     }
                 }
             }
         }
     }
-    
+
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            // Clean up workspace if needed
+            cleanWs()
         }
     }
 }
