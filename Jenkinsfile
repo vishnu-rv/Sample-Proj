@@ -49,6 +49,18 @@ pipeline {
             }
         }
 
+        stage('Setup Kubeconfig') {
+            steps {
+                script {
+                    // Retrieve the kubeconfig secret and save it
+                    withCredentials([file(credentialsId: KUBE_CONFIG_ID, variable: 'KUBE_CONFIG_FILE')]) {
+                        sh "mkdir -p ~/.kube"
+                        sh "cp ${KUBE_CONFIG_FILE} ~/.kube/config"
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
