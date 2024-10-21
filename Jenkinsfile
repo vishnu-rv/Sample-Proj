@@ -1,5 +1,5 @@
 pipeline {
-    agent any 
+    agent any
 
     environment {
         DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
@@ -14,49 +14,40 @@ pipeline {
     stages {
         stage('Cleanup') {
             steps {
-                cleanWs() // Clean the workspace to avoid conflicts
+                script {
+                    // Clean workspace to prevent conflicts
+                    cleanWs()
+                }
             }
         }
-        
+
         stage('Checkout') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        // Clone the repository
-                        sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
-                    }
+                    // Checkout the code from GitHub
+                    checkout([$class: 'GitSCM', 
+                        branches: [[name: '*/main']], // Change to your branch name
+                        userRemoteConfigs: [[url: 'https://github.com/vishnu-rv/Demo.git', credentialsId: GIT_CREDENTIALS_ID]]
+                    ])
                 }
             }
         }
 
-        stage('Verify Dockerfile') {
+        stage('Build') {
             steps {
                 script {
-                    // Check if the Dockerfile exists
-                    def dockerfilePath = 'Sample-Proj/Dockerfile'
-                    if (fileExists(dockerfilePath)) {
-                        echo "Dockerfile found at ${dockerfilePath}"
-                    } else {
-                        error "Dockerfile not found at ${dockerfilePath}"
-                    }
+                    // Build Docker image and tag it as v1
+                    docker.build("${DOCKER_IMAGE}:v1")
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Build the Docker image, assuming the Dockerfile is at the root of Sample-Proj
-                    sh "docker build -t ${DOCKER_IMAGE}:v1 -f Sample-Proj/Dockerfile Sample-Proj"
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
+                    // Log in to Docker Hub and push the image
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        sh "docker push ${DOCKER_IMAGE}:v1" // Push the Docker image
+                        docker.image("${DOCKER_IMAGE}:v1").push()
                     }
                 }
             }
@@ -65,15 +56,18 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Set Kubeconfig and deploy to Kubernetes
                     withCredentials([file(credentialsId: KUBE_CONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                        sh "kubectl apply -f deployment.yaml --namespace=${K8S_NAMESPACE} --validate=false"
-                        sh "kubectl apply -f service.yaml --namespace=${K8S_NAMESPACE} --validate=false"
+                        sh '''
+                        kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_DEPLOYMENT}=${DOCKER_IMAGE}:v1 -n ${K8S_NAMESPACE}
+                        kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                        '''
                     }
                 }
             }
         }
     }
-
+    
     post {
         success {
             echo 'Pipeline completed successfully!'
