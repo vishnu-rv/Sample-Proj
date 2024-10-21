@@ -2,31 +2,29 @@ pipeline {
     agent any 
 
     environment {
-        KUBE_CONFIG_FILE = '/var/lib/jenkins/Pipeline-kubeconfig.yaml'  // Path to your kubeconfig file
-        K8S_NAMESPACE = 'my-proj'  // Use your target Kubernetes namespace
-        DOCKER_IMAGE = 'your-docker-image:latest'  // Replace with your Docker image name
-        DOCKER_CREDENTIALS_ID = 'your-docker-credentials-id'  // Your Docker registry credentials ID
-        GIT_CREDENTIALS_ID = 'your-git-credentials-id'  // Your Git credentials ID
+        DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
+        GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'
+        DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
+        K8S_NAMESPACE = 'my-proj' // Added the namespace variable
+        K8S_DEPLOYMENT = 'my-devops-proj'
+        K8S_SERVICE = 'devops-service'
+        KUBE_CONFIG_ID = '9a294acd-a907-466c-bab7-36e33053cf4b' // Secret ID for kubeconfig
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 script {
-                    // Checkout your Git repository
-                    git url: 'https://github.com/vishnu-rv/Sample-Proj.git', credentialsId: GIT_CREDENTIALS_ID
-                }
-            }
-        }
-
-        stage('Setup Kubeconfig') {
-            steps {
-                script {
-                    // Create the kubeconfig directory if it does not exist
-                    sh 'mkdir -p /var/lib/jenkins/.kube'
-                    
-                    // Copy the kubeconfig file to the appropriate location
-                    sh "cp ${KUBE_CONFIG_FILE} /var/lib/jenkins/.kube/config"
+                    // Clean up the workspace before cloning
+                    sh "rm -rf Sample-Proj" // Remove existing directory
+                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh """
+                            git config --global credential.helper store
+                            echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
+                        """
+                        // Clone the repository
+                        sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
+                    }
                 }
             }
         }
@@ -34,13 +32,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Log in to Docker registry
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
-                    }
-
                     // Build the Docker image
-                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    docker.build("${DOCKER_IMAGE}:latest")
                 }
             }
         }
@@ -48,8 +41,10 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Push the Docker image to the registry
-                    sh "docker push ${DOCKER_IMAGE}"
+                    // Login to Docker Hub and push the image
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
                 }
             }
         }
@@ -57,8 +52,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply your Kubernetes configuration
-                    sh "kubectl apply -f deployment.yaml --kubeconfig=/var/lib/jenkins/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
+                    // Apply the deployment YAML
+                    sh "kubectl apply -f deployment.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
+                    // Apply the service YAML
+                    sh "kubectl apply -f service.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
                 }
             }
         }
@@ -66,10 +63,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully.'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed!'
         }
     }
 }
