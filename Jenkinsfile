@@ -29,9 +29,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    def versionNumber = getNextVersion()
+                    def imageTag = "${DOCKER_IMAGE}:v${versionNumber}"
                     // Build the Docker image
-                    def imageTag = "${DOCKER_IMAGE}:latest"
                     def image = docker.build(imageTag)
+                    // Add the latest tag to the built image
+                    sh "docker tag ${imageTag} ${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -44,6 +47,9 @@ pipeline {
                         sh "docker images"
                         // Push the image with the latest tag
                         sh "docker push ${DOCKER_IMAGE}:latest"
+                        // Push the versioned image
+                        def versionTag = "${DOCKER_IMAGE}:v${getCurrentVersion()}"
+                        sh "docker push ${versionTag}"
                     }
                 }
             }
@@ -69,4 +75,31 @@ pipeline {
             echo 'Pipeline failed!'
         }
     }
+}
+
+// Function to get the next version number
+def getNextVersion() {
+    def versionFile = 'version.txt'
+    def currentVersion = 0
+
+    if (fileExists(versionFile)) {
+        currentVersion = readFile(versionFile).trim().toInteger()
+    }
+
+    def nextVersion = currentVersion + 1
+    writeFile file: versionFile, text: "${nextVersion}"
+
+    return nextVersion
+}
+
+// Function to get the current version number
+def getCurrentVersion() {
+    def versionFile = 'version.txt'
+    def currentVersion = 0
+
+    if (fileExists(versionFile)) {
+        currentVersion = readFile(versionFile).trim().toInteger()
+    }
+
+    return currentVersion
 }
