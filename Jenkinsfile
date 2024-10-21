@@ -22,15 +22,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        // Set up Git credentials for the session
-                        sh "git config --global credential.helper store"
-                        
-                        // Store the credentials in the Git config for future use
-                        sh """
-                            echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
-                            git config --global credential.helper 'store --file=~/.git-credentials'
-                        """
-                        
                         // Clone the repository
                         sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
                     }
@@ -38,11 +29,12 @@ pipeline {
             }
         }
 
-        stage('List Directory') {
+        stage('List Directory Structure') {
             steps {
                 script {
-                    // List the contents of the Sample-Proj directory to verify the Dockerfile is present
-                    sh "ls -la Sample-Proj"
+                    // List the contents of the workspace to verify the repository was cloned correctly
+                    sh "ls -la" // List everything in the current workspace
+                    sh "ls -la Sample-Proj" // List contents specifically in the Sample-Proj directory
                 }
             }
         }
@@ -50,11 +42,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def versionNumber = getNextVersion() // Get the next version number
-                    def imageTag = "${DOCKER_IMAGE}:v${versionNumber}" // Tag with version
-                    
-                    // Ensure Dockerfile path is correct
-                    sh "docker build -t ${imageTag} -f Sample-Proj/Dockerfile Sample-Proj" // Update path if necessary
+                    // Build the Docker image, assuming the Dockerfile is at the root of Sample-Proj
+                    sh "docker build -t ${DOCKER_IMAGE}:v1 -f Sample-Proj/Dockerfile Sample-Proj"
                 }
             }
         }
@@ -62,14 +51,8 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    def latestTag = "${DOCKER_IMAGE}:latest"
-                    def versionTag = "${DOCKER_IMAGE}:v${getNextVersion() - 1}" // Tag for latest built version
-
-                    // Push both versioned and latest images
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        sh "docker push ${versionTag}" // Push the versioned tag
-                        sh "docker tag ${versionTag} ${latestTag}" // Tag the latest image
-                        sh "docker push ${latestTag}" // Push the latest tag
+                        sh "docker push ${DOCKER_IMAGE}:v1" // Push the Docker image
                     }
                 }
             }
@@ -95,19 +78,4 @@ pipeline {
             echo 'Pipeline failed!'
         }
     }
-}
-
-// Function to get the next version number
-def getNextVersion() {
-    def versionFile = 'version.txt'
-    def currentVersion = 0
-
-    if (fileExists(versionFile)) {
-        currentVersion = readFile(versionFile).trim().toInteger()
-    }
-
-    def nextVersion = currentVersion + 1
-    writeFile file: versionFile, text: "${nextVersion}"
-
-    return nextVersion
 }
