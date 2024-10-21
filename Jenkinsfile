@@ -1,71 +1,53 @@
 pipeline {
-    agent any 
-
+    agent any
     environment {
         DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
         GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
-        K8S_NAMESPACE = 'my-proj' // Added the namespace variable
+        K8S_NAMESPACE = 'my-proj'
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
-     }
-
+    }
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    // Clean up the workspace before cloning
-                    sh "rm -rf Sample-Proj" // Remove existing directory
-                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        sh """
-                            git config --global credential.helper store
-                            echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
-                        """
-                        // Clone the repository
-                        sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
-                    }
+                    // Using Git credentials for private repo access
+                    git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/vishnu-rv/Demo.git', branch: 'main'
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
-                    docker.build("${DOCKER_IMAGE}:latest")
+                    // Building the Docker image
+                    dockerImage = docker.build("${DOCKER_IMAGE}")
                 }
             }
         }
-
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Login to Docker Hub and push the image
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    // Pushing the image to Docker Hub using stored credentials
+                    docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
+                        dockerImage.push('latest')
                     }
                 }
             }
         }
-
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply the deployment YAML
-                    sh "kubectl apply -f deployment.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
-                    // Apply the service YAML
-                    sh "kubectl apply -f service.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
+                    // Deploying to Kubernetes
+                    kubectl.apply("--namespace=${K8S_NAMESPACE} -f deployment.yaml")
+                    kubectl.apply("--namespace=${K8S_NAMESPACE} -f service.yaml")
                 }
             }
         }
     }
-
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            cleanWs()
         }
     }
 }
