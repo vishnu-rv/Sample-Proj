@@ -8,8 +8,7 @@ pipeline {
         K8S_NAMESPACE = 'my-proj' // Added the namespace variable
         K8S_DEPLOYMENT = 'my-devops-proj'
         K8S_SERVICE = 'devops-service'
-        KUBE_CONFIG_ID = '9a294acd-a907-466c-bab7-36e33053cf4b' // Secret ID for kubeconfig
-    }
+     }
 
     stages {
         stage('Checkout') {
