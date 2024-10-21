@@ -16,8 +16,13 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        // Clone the repository securely
-                        sh "git clone https://\$GIT_USER:\$GIT_PASS@github.com/vishnu-rv/Sample-Proj.git"
+                        // Set up a temporary Git config to use HTTPS
+                        sh """
+                            git config --global credential.helper store
+                            echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
+                        """
+                        // Clone the repository
+                        sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
                     }
                 }
             }
