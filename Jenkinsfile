@@ -38,6 +38,15 @@ pipeline {
             }
         }
 
+        stage('List Directory') {
+            steps {
+                script {
+                    // List the contents of the Sample-Proj directory to verify the Dockerfile is present
+                    sh "ls -la Sample-Proj"
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
