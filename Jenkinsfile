@@ -2,16 +2,49 @@ pipeline {
     agent any 
 
     environment {
-        KUBE_CONFIG_ID = 'your-kubeconfig-secret-id'  // Replace with your kubeconfig secret ID
-        K8S_NAMESPACE = 'my-proj'                      // Replace with your target Kubernetes namespace
+        DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
+        GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'
+        DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
+        K8S_NAMESPACE = 'my-proj' // Added the namespace variable
+        K8S_DEPLOYMENT = 'my-devops-proj'
+        K8S_SERVICE = 'devops-service'
+        KUBE_CONFIG_ID = '9a294acd-a907-466c-bab7-36e33053cf4b' // Secret ID for kubeconfig
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 script {
-                    // Checkout your Git repository
-                    git url: 'https://github.com/vishnu-rv/Sample-Proj.git', credentialsId: 'your-git-credentials-id' // Replace with your Git credentials ID
+                    // Clean up the workspace before cloning
+                    sh "rm -rf Sample-Proj" // Remove existing directory
+                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh """
+                            git config --global credential.helper store
+                            echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
+                        """
+                        // Clone the repository
+                        sh "git clone https://github.com/vishnu-rv/Sample-Proj.git"
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    docker.build("${DOCKER_IMAGE}:latest")
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Login to Docker Hub and push the image
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
                 }
             }
         }
@@ -21,11 +54,8 @@ pipeline {
                 script {
                     // Retrieve the kubeconfig secret and save it
                     withCredentials([file(credentialsId: KUBE_CONFIG_ID, variable: 'KUBE_CONFIG_FILE')]) {
-                        // Create the directory if it does not exist and copy the kubeconfig
-                        sh """
-                            mkdir -p ~/.kube
-                            cp ${KUBE_CONFIG_FILE} ~/.kube/config
-                        """
+                        sh "mkdir -p ~/.kube"
+                        sh "cp ${KUBE_CONFIG_FILE} ~/.kube/config"
                     }
                 }
             }
@@ -34,39 +64,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply your Kubernetes configuration
+                    // Apply the deployment YAML
                     sh "kubectl apply -f deployment.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
-                }
-            }
-        }
-
-        stage('Docker Login') {
-            steps {
-                script {
-                    // Docker login (make sure to replace the credentials ID)
-                    withCredentials([usernamePassword(credentialsId: 'your-docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                script {
-                    // Build your Docker image
-                    sh "docker build -t your-docker-image-name:latest ."  // Replace with your Docker image name
-                }
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                script {
-                    // Push the Docker image to your Docker registry
-                    sh "docker push your-docker-image-name:latest"  // Replace with your Docker image name
+                    // Apply the service YAML
+                    sh "kubectl apply -f service.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
                 }
             }
         }
@@ -74,10 +75,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully.'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed!'
         }
     }
 }
