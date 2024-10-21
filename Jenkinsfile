@@ -1,53 +1,75 @@
 pipeline {
-    agent any
+    agent any 
+
     environment {
-        DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
-        GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'
-        DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
-        K8S_NAMESPACE = 'my-proj'
-        K8S_DEPLOYMENT = 'my-devops-proj'
-        K8S_SERVICE = 'devops-service'
+        KUBE_CONFIG_FILE = '/var/lib/jenkins/.kube/config'
+        K8S_NAMESPACE = 'my-proj'  // Use your target Kubernetes namespace
+        DOCKER_IMAGE = 'vishnu2117/devops-proj-1'  // Replace with your Docker image name
+        DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'  // Your Docker registry credentials ID
+        GIT_CREDENTIALS_ID = '2f7d41dd-0dc6-4cc6-9a41-b07a9b72b2b1'  // Your Git credentials ID
     }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    // Using Git credentials for private repo access
-                    git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/vishnu-rv/Demo.git', branch: 'main'
+                    // Checkout your Git repository
+                    git url: 'https://github.com/vishnu-rv/Sample-Proj.git', credentialsId: GIT_CREDENTIALS_ID
                 }
             }
         }
+
+        stage('Setup Kubeconfig') {
+            steps {
+                script {
+                    // Create the kubeconfig directory if it does not exist
+                    sh 'mkdir -p /var/lib/jenkins/.kube'
+                    
+                    // Copy the kubeconfig file to the appropriate location
+                    sh "cp ${KUBE_CONFIG_FILE} /var/lib/jenkins/.kube/config"
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Building the Docker image
-                    dockerImage = docker.build("${DOCKER_IMAGE}")
+                    // Log in to Docker registry
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                    }
+
+                    // Build the Docker image
+                    sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
+
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Pushing the image to Docker Hub using stored credentials
-                    docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
-                        dockerImage.push('latest')
-                    }
+                    // Push the Docker image to the registry
+                    sh "docker push ${DOCKER_IMAGE}"
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Deploying to Kubernetes
-                    kubectl.apply("--namespace=${K8S_NAMESPACE} -f deployment.yaml")
-                    kubectl.apply("--namespace=${K8S_NAMESPACE} -f service.yaml")
+                    // Apply your Kubernetes configuration
+                    sh "kubectl apply -f deployment.yaml --kubeconfig=/var/lib/jenkins/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
                 }
             }
         }
     }
+
     post {
-        always {
-            cleanWs()
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
