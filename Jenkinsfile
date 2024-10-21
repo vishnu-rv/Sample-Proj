@@ -14,12 +14,10 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the Git repository
                 script {
                     withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        // Use a secure way to construct the clone URL
-                        def repoUrl = "https://${GIT_USER}:${GIT_PASS}@github.com/vishnu-rv/Sample-Proj.git"
-                        sh "git clone ${repoUrl}"
+                        // Clone the repository securely
+                        sh "git clone https://\$GIT_USER:\$GIT_PASS@github.com/vishnu-rv/Sample-Proj.git"
                     }
                 }
             }
