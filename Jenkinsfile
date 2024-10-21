@@ -29,12 +29,16 @@ pipeline {
             }
         }
 
-        stage('List Directory Structure') {
+        stage('Verify Dockerfile') {
             steps {
                 script {
-                    // List the contents of the workspace to verify the repository was cloned correctly
-                    sh "ls -la" // List everything in the current workspace
-                    sh "ls -la Sample-Proj" // List contents specifically in the Sample-Proj directory
+                    // Check if the Dockerfile exists
+                    def dockerfilePath = 'Sample-Proj/Dockerfile'
+                    if (fileExists(dockerfilePath)) {
+                        echo "Dockerfile found at ${dockerfilePath}"
+                    } else {
+                        error "Dockerfile not found at ${dockerfilePath}"
+                    }
                 }
             }
         }
