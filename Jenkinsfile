@@ -14,13 +14,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the Git repository
                 script {
                     withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        sh """
-                        git config --global credential.helper store
-                        git clone https://${GIT_USER}:${GIT_PASS}@github.com/vishnu-rv/Sample-Proj.git
-                        """
+                        // Set up Git credentials for the session
+                        sh "git config --global credential.helper store"
+                        
+                        // Clone the repository using the Git credentials
+                        sh "git clone https://${GIT_USER}:${GIT_PASS}@github.com/vishnu-rv/Sample-Proj.git"
                     }
                 }
             }
