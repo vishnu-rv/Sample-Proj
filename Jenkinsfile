@@ -12,6 +12,12 @@ pipeline {
     }
 
     stages {
+        stage('Cleanup') {
+            steps {
+                cleanWs() // Clean the workspace to avoid conflicts
+            }
+        }
+        
         stage('Checkout') {
             steps {
                 script {
@@ -35,9 +41,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def versionNumber = getNextVersion()
-                    def imageTag = "${DOCKER_IMAGE}:v${versionNumber}"
-                    docker.build(imageTag)
+                    def versionNumber = getNextVersion() // Get the next version number
+                    def imageTag = "${DOCKER_IMAGE}:v${versionNumber}" // Tag with version
+                    docker.build(imageTag) // Build the Docker image with version tag
                 }
             }
         }
@@ -45,8 +51,14 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
+                    def latestTag = "${DOCKER_IMAGE}:latest"
+                    def versionTag = "${DOCKER_IMAGE}:v${getNextVersion() - 1}" // Tag for latest built version
+
+                    // Push both versioned and latest images
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        sh "docker push ${DOCKER_IMAGE}:latest"
+                        sh "docker push ${versionTag}" // Push the versioned tag
+                        sh "docker tag ${versionTag} ${latestTag}" // Tag the latest image
+                        sh "docker push ${latestTag}" // Push the latest tag
                     }
                 }
             }
