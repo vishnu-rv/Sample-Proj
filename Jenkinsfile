@@ -54,8 +54,10 @@ pipeline {
                 script {
                     // Retrieve the kubeconfig secret and save it
                     withCredentials([file(credentialsId: KUBE_CONFIG_ID, variable: 'KUBE_CONFIG_FILE')]) {
-                        sh "mkdir -p ~/.kube"
-                        sh "cp ${KUBE_CONFIG_FILE} ~/.kube/config"
+                        sh """
+                            mkdir -p ~/.kube
+                            cp ${KUBE_CONFIG_FILE} ~/.kube/config
+                        """
                     }
                 }
             }
@@ -64,6 +66,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Check if the kubeconfig file exists
+                    sh "ls -la ~/.kube/config"
                     // Apply the deployment YAML
                     sh "kubectl apply -f deployment.yaml --kubeconfig=~/.kube/config --namespace=${K8S_NAMESPACE} --validate=false"
                     // Apply the service YAML
