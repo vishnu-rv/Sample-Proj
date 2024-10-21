@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
-        GIT_CREDENTIALS_ID = '6881cda4-f7d0-444e-8f4d-3ec3ae05f9de' // Updated ID
-        KUBE_CONFIG_CREDENTIALS_ID = '9a294acd-a907-466c-bab7-36e33053cf4b'
+        GIT_CREDENTIALS_ID = '6881cda4-f7d0-444e-8f4d-3ec3ae05f9de'
         DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
         K8S_NAMESPACE = 'my-proj'
         K8S_DEPLOYMENT = 'my-devops-proj'
@@ -14,7 +13,8 @@ pipeline {
     stages {
         stage('Cleanup') {
             steps {
-                // Cleanup steps (if any)
+                echo "Cleaning up workspace"
+                cleanWs()
             }
         }
 
@@ -22,8 +22,8 @@ pipeline {
             steps {
                 script {
                     checkout([$class: 'GitSCM', 
-                        branches: [[name: '*/main']], // Adjust to your branch if necessary
-                        userRemoteConfigs: [[url: 'https://github.com/vishnu-rv/Demo.git', credentialsId: GIT_CREDENTIALS_ID]]
+                        branches: [[name: '*/master']], // Make sure the branch is correct
+                        userRemoteConfigs: [[url: 'https://github.com/vishnu-rv/Sample-Proj.git', credentialsId: GIT_CREDENTIALS_ID]]
                     ])
                 }
             }
@@ -31,10 +31,9 @@ pipeline {
 
         stage('Build') {
             steps {
-                // Your build steps here (e.g., building Docker image)
-                script {
-                    sh 'docker build -t ${DOCKER_IMAGE}:v1 .'
-                }
+                // Add the actual steps here
+                echo "Building the project"
+                sh 'docker build -t ${DOCKER_IMAGE}:v1 .'
             }
         }
 
@@ -65,7 +64,7 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace if needed
+            echo "Pipeline finished, cleaning up"
             cleanWs()
         }
     }
