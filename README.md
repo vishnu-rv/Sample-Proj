@@ -52,8 +52,9 @@ Before starting, ensure you have the following:
 
    ```plaintext
    PORT=3000
-   STRIPE_SECRET_KEY=your_stripe_secret_key
+   #STRIPE_SECRET_KEY=your_stripe_secret_key
    HOST=http://<YOUR_IP_OR_LB_IP>:3000
+   STATIC_DIR=client  #this is the path of the index.html
    ```
 
 2. **Install Dependencies**:
