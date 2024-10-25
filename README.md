@@ -1,30 +1,28 @@
-Here’s an updated README file that incorporates your pipeline configuration and usage with `pm2`, a process manager for Node.js applications. This setup omits Express.js as per your instructions and assumes you’re using a basic Node.js server.
-
 ---
 
 # DevOps Project
 
-This project demonstrates a simple web application built with Node.js, utilizing Stripe for payment processing. The application is containerized with Docker, deployed on a Kubernetes cluster, and automated through a Jenkins CI/CD pipeline. The setup also includes `pm2` for process management in production.
+This project demonstrates a simple web application built with Node.js, utilizing Stripe for payment processing. The application is containerized using Docker and deployed on a Kubernetes cluster. It serves static HTML pages and handles payment sessions through Stripe.
 
 ## Features
 
 - Simple Node.js web server
-- Static file serving and Stripe payment integration
-- Dockerized for easy container management
+- Static file serving from a public directory
+- Stripe payment integration
+- Dockerized application for easy deployment
 - Kubernetes deployment for scalability and load balancing
-- Jenkins pipeline for CI/CD automation
-- `pm2` for process management in production
+- Jenkins pipeline for automated CI/CD
+- PM2 for process management
 
 ## Prerequisites
 
-Before starting, ensure you have the following:
+Before you begin, ensure you have met the following requirements:
 
 - **Node.js**: v14 or higher
 - **Docker**: v20 or higher
 - **Kubernetes**: Access to a Kubernetes cluster
 - **kubectl**: Command-line tool for Kubernetes
 - **Jenkins**: For CI/CD pipeline
-- **pm2**: Node.js process manager (for local or VM deployment)
 - **Stripe API Key**: For payment integration
 
 ## Project Structure
@@ -48,13 +46,12 @@ Before starting, ensure you have the following:
 
 ### Local Environment Setup
 
-1. **Edit `.env` file**: Add your IP address or Load Balancer IP for local deployment. 
+1. **Edit `.env` file**: Update the `.env` file with your IP address or Load Balancer IP if running locally. Replace `localhost` with your IP.
 
    ```plaintext
    PORT=3000
-   #STRIPE_SECRET_KEY=your_stripe_secret_key
+   STRIPE_SECRET_KEY=your_stripe_secret_key
    HOST=http://<YOUR_IP_OR_LB_IP>:3000
-   STATIC_DIR=client  #this is the path of the index.html
    ```
 
 2. **Install Dependencies**:
@@ -63,131 +60,191 @@ Before starting, ensure you have the following:
    npm install
    ```
 
-3. **Run the Application with pm2**:
+3. **Run the Application**:
 
-   Install `pm2` if you haven’t already:
+   ```bash
+   npm start
+   ```
+
+### Using PM2 for Process Management
+
+PM2 is a popular process manager for Node.js applications that allows you to keep your app alive and manage it easily.
+
+1. **Install PM2 Globally**:
 
    ```bash
    npm install -g pm2
    ```
 
-   Start the application with `pm2`:
+2. **Start the Application with PM2**:
 
    ```bash
-   pm2 start server.js --name devops-app
+   pm2 start server.js --name "my-app"
    ```
+
+3. **Manage Your Application**:
+
+   - View status: `pm2 status`
+   - Stop application: `pm2 stop my-app`
+   - Restart application: `pm2 restart my-app`
+   - View logs: `pm2 logs my-app`
 
 ### Docker Setup
 
 1. **Build Docker Image**:
 
    ```bash
-   docker build -t vishnu2117/devops-proj-1 .
+   docker build -t your-docker-image:latest .
    ```
 
 2. **Run Docker Container Locally**:
 
    ```bash
-   docker run -p 3000:3000 vishnu2117/devops-proj-1
+   docker run -p 3000:3000 your-docker-image:latest
    ```
 
 ### Kubernetes Deployment
 
-1. **Push Docker Image**:
+1. **Push Docker Image**: Push the image to your Docker registry if you plan to use Kubernetes for deployment.
 
    ```bash
-   docker push vishnu2117/devops-proj-1
+   docker push your-docker-image:latest
    ```
 
 2. **Deploy to Kubernetes**:
 
+   Apply the Kubernetes configuration (such as `deployment.yaml`) with your desired namespace and Docker image.
+
    ```bash
-   kubectl apply -f deployment.yaml --namespace=my-proj
+   kubectl apply -f deployment.yaml --namespace=my-namespace
    ```
 
 ---
 
-### Jenkins Pipeline Setup
+### CI/CD Pipeline with Jenkins
 
-To automate the build, push, and deployment steps, use the following Jenkins pipeline. This setup includes setting environment variables, building and pushing the Docker image, and deploying to Kubernetes.
+To automate this process, follow these steps to set up a Jenkins pipeline that builds, pushes, and deploys your Docker image to Kubernetes.
 
-#### Jenkins Setup Instructions
+#### Jenkins Setup
 
 1. **Credentials Setup**:
-   - **Docker Registry**: Add a credential in Jenkins with ID `54976742-d291-4757-b697-a1c1e178da6c`.
-   - **GitHub Repository**: Add a credential with ID `6881cda4-f7d0-444e-8f4d-3ec3ae05f9de`.
-   - **Kubeconfig File**: Upload your kubeconfig as a file credential with ID `d3a89aeb-9181-4f6d-b74e-2baf7bc6a43e`.
+   - **Docker Registry**:
+     - Go to `Manage Jenkins > Manage Credentials`.
+     - Add a new credential for your Docker registry with your username and password.
+   - **GitHub Repository**:
+     - Add a new credential with your GitHub username and token if necessary.
+   - **Kubeconfig**:
+     - Save your kubeconfig file securely on the Jenkins server.
+     - Go to `Manage Jenkins > Manage Credentials` and add it as a file credential, giving it an ID (e.g., `kubeconfig-cred`).
 
 2. **Jenkins Pipeline Script**:
 
-   ```groovy
-   pipeline {
-       agent any
+Here’s a Jenkins pipeline script for your CI/CD process:
 
-       environment {
-           DOCKER_CREDENTIALS_ID = '54976742-d291-4757-b697-a1c1e178da6c'
-           GIT_CREDENTIALS_ID = '6881cda4-f7d0-444e-8f4d-3ec3ae05f9de'
-           DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
-           K8S_NAMESPACE = 'my-proj'
-           K8S_DEPLOYMENT = 'my-devops-proj'
-           K8S_SERVICE = 'devops-service'
-           KUBE_CONFIG_CREDENTIALS_ID = 'd3a89aeb-9181-4f6d-b74e-2baf7bc6a43e'  // Newly created kubeconfig credential ID
-       }
+```groovy
+pipeline {
+    agent any
 
-       stages {
-           stage('Checkout') {
-               steps {
-                   git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/vishnu-rv/Sample-Proj.git'
-               }
-           }
+    environment {
+        DOCKER_CREDENTIALS_ID = 'ID'
+        GIT_CREDENTIALS_ID = 'ID'
+        DOCKER_IMAGE = 'vishnu2117/devops-proj-1'
+        K8S_NAMESPACE = 'my-proj'
+        K8S_DEPLOYMENT = 'my-devops-proj'
+        K8S_SERVICE = 'devops-service'
+        KUBE_CONFIG_CREDENTIALS_ID = 'ID'  // Newly created kubeconfig credential ID
+    }
 
-           stage('Build Docker Image') {
-               steps {
-                   script {
-                       docker.build("${DOCKER_IMAGE}")
-                   }
-               }
-           }
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/vishnu-rv/Sample-Proj.git'
+            }
+        }
 
-           stage('Push Docker Image') {
-               steps {
-                   script {
-                       docker.withRegistry('', "${DOCKER_CREDENTIALS_ID}") {
-                           docker.image("${DOCKER_IMAGE}").push('v1')
-                       }
-                   }
-               }
-           }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${DOCKER_IMAGE}")
+                }
+            }
+        }
 
-           stage('Deploy to Kubernetes') {
-               steps {
-                   script {
-                       withCredentials([file(credentialsId: KUBE_CONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                           sh '''
-                           kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_DEPLOYMENT}=${DOCKER_IMAGE}:v1 --namespace=${K8S_NAMESPACE}
-                           kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
-                           '''
-                       }
-                   }
-               }
-           }
-       }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('', "${DOCKER_CREDENTIALS_ID}") {
+                        docker.image("${DOCKER_IMAGE}").push('v1')
+                    }
+                }
+            }
+        }
 
-       post {
-           always {
-               echo "Pipeline finished, cleaning up"
-               cleanWs()
-           }
-       }
-   }
-   ```
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: KUBE_CONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                        sh '''
+                        kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_DEPLOYMENT}=${DOCKER_IMAGE}:v1 --namespace=${K8S_NAMESPACE}
+                        kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished, cleaning up"
+            cleanWs()
+        }
+    }
+}
+```
+
+### Setting Up Webhooks
+
+To enable complete automation, you can set up webhooks in GitHub or any version control system you're using. This will trigger the Jenkins pipeline automatically when changes are pushed to the repository.
+
+1. **In GitHub**:
+   - Go to your repository.
+   - Click on `Settings > Webhooks > Add webhook`.
+   - Set the Payload URL to your Jenkins URL followed by `/github-webhook/` (e.g., `http://your-jenkins-url/github-webhook/`).
+   - Set the content type to `application/json`.
+   - Choose to trigger on `Just the push event`.
+   - Click on `Add webhook`.
+
+2. **In Jenkins**:
+   - Go to your Jenkins job.
+   - Click on `Configure`.
+   - In the Build Triggers section, check `GitHub hook trigger for GITScm polling`.
 
 ---
 
-### Summary of Steps
+### Summary of Deployment Types
 
-1. **Local Deployment**: Set up `.env`, install dependencies, and use `pm2` for process management.
-2. **Dockerize the Application**: Build and push the Docker image to your Docker registry.
-3. **Kubernetes Deployment**: Deploy the Docker image to your Kubernetes cluster.
-4. **Automate with Jenkins**: Use the provided Jenkins pipeline to automate building, pushing, and deploying the application. 
+1. **Local Deployment**:
+   - Run using Node.js and Express by executing `npm start`.
+   - Manage using PM2 with `pm2 start server.js --name "my-app"`.
 
+2. **Automated Deployment**:
+   - Automated CI/CD process using Jenkins, Docker, and Kubernetes.
+   - Build, push, and deploy your Docker images to your Kubernetes cluster automatically.
+
+---
+
+### Screenshots
+
+- **Jenkins Job Successfully Run**:
+- ![image](https://github.com/user-attachments/assets/510c3db4-4a78-472b-97b5-c92247566c26)
+
+ 
+
+- **Pipeline Output**:
+![image](https://github.com/user-attachments/assets/a34633ab-9a6a-492c-b9a6-81b02792eb02)
+
+ 
+
+
+With this setup, you can easily manage your Node.js application in various environments while ensuring a streamlined CI/CD process.
