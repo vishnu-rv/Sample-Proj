@@ -47,7 +47,7 @@ Create a `.env` file in the project root directory and add the following environ
 ```plaintext
 SECRET_KEY=<Your Stripe Secret Key>
 DOMAIN=http://<Your LoadBalancer IP>
-STATIC_DIR=public
+STATIC_DIR=client
 ```
 
 Replace `<Your Stripe Secret Key>` with your actual Stripe API secret key, and `<Your LoadBalancer IP>` with the LoadBalancer IP provided by your Kubernetes service.
