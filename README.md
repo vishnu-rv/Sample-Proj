@@ -90,19 +90,5 @@ Once deployed, you can access the application using the LoadBalancer IP assigned
 
 To automate the deployment process, you can set up a Jenkins pipeline that builds the Docker image and deploys it to the Kubernetes cluster.
 
-## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request.
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-```
-
-### Instructions to Use
-
-1. Copy the above content into a file named `README.md` in your project directory.
-2. Adjust any sections (like features, installation instructions, etc.) to match your project's specifics.
-3. Commit and push the changes to your GitHub repository. 
-
-This `README` will help others understand your project and how to get it running. Let me know if you need any modifications!
